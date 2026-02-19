@@ -86,3 +86,41 @@ export const createUserController = async (req: Request, res: Response) => {
         })
     }
 }
+
+export const loginUserController = async (req:Request, res: Response) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password){
+            return res.status(400).json({
+                msg: "Email dan password wajib diisi"
+            })
+        }
+        const user = await prisma.user.findUnique({
+            where: {
+                email,
+            }
+        })
+        if (!user){
+            return res.status(404).json({
+                msg: "User tidak ditemukan",
+            })
+        }
+        const isPasswordValid = await bcrypt.compare(password, user.password)
+        if (!isPasswordValid){
+            return res.status(401).json({
+                msg: "Password Salah"
+            })
+        }
+        const token = generateToken({id: user.id});
+        res.status(200).json({
+            msg: "Login berhasil!",
+            hello: `Hey, Selamat datang kembali ${user.name} di E-Commerce!`,
+            token: token,
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            msg: "Internal Server Error"
+        })
+    }
+}
