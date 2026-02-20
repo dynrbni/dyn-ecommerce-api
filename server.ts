@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import userRoutes from "./routes/users";
 import categoryRoutes from "./routes/category";
+import productRoutes from "./routes/products";
 
 dotenv.config();
 
@@ -9,8 +10,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+
+//routes API
 app.use("/api", userRoutes);
 app.use("/api", categoryRoutes);
+app.use("/api", productRoutes);
 
 app.get('/', (req, res) => {
   res.send('E-Commerce API by King Dean');
