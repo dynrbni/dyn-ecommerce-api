@@ -5,14 +5,14 @@ import { generateToken } from "../services/jwtCreate";
 
 export const getAllUsersController = async (req: Request, res: Response) => {
     try {
-        const users = await prisma.user.findMany({
+        const user = await prisma.user.findMany({
             where: {
                 deletedAt: null
             },
         });
         res.status(200).json({
             msg: "Berhasil mendapatkan semua users",
-            data: users,
+            data: user,
         })
     } catch (error) {
         console.log(error);
@@ -116,6 +116,82 @@ export const loginUserController = async (req:Request, res: Response) => {
             msg: "Login berhasil!",
             hello: `Hey, Selamat datang kembali ${user.name} di E-Commerce!`,
             token: token,
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            msg: "Internal Server Error"
+        })
+    }
+}
+
+export const updateUserController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { name, email, password } = req.body;
+        const userNotFound = await prisma.user.findUnique({
+            where: {
+                id: String(id),
+            }
+        })
+        if (!userNotFound){
+            return res.status(404).json({
+                msg: "User tidak ditemukan",
+            })
+        }
+
+        const dataToUpdate: any = {};
+            if (name !== undefined){
+                dataToUpdate.name = name;
+            }
+            if (email !== undefined){
+                dataToUpdate.email = email;
+            }
+            if (password !== undefined){
+                dataToUpdate.password = await bcrypt.hash(password, 10);
+            }
+        const updatedUser = await prisma.user.update({
+            where: {
+                id: String(id),
+            },
+            data: dataToUpdate
+        })
+        res.status(200).json({
+            msg: "Berhasil mengupdate user",
+            data: updatedUser,
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            msg: "Internal Server Error"
+        })
+    }
+}
+
+export const deleteUserController = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userNotFound = await prisma.user.findUnique({
+            where: {
+                id: String(id),
+            }
+        })
+        if (!userNotFound){
+            return res.status(404).json({
+                msg: "User tidak ditemukan",
+            })
+        }
+        const deletedUser = await prisma.user.update({
+            where: {
+                id: String(id),
+            },
+            data: {
+                deletedAt: new Date(),
+            }
+        })
+        res.status(200).json({
+            msg: "Berhasil menghapus user",
+            data: deletedUser,
         })
     } catch (error) {
         console.log(error);

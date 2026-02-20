@@ -25,7 +25,6 @@ export const JwtVerify = (
                 message: "Unauthorized - invalid token",
             });
         }
-        req.body.user = decoded;
         next();
     });
 };
