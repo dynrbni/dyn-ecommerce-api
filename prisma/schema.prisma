@@ -43,6 +43,7 @@ model Category {
   products  Product[]
 
   createdAt DateTime  @default(now())
+  deletedAt DateTime?
 }
 
 model Product {
@@ -59,6 +60,7 @@ model Product {
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 }
 
 model Cart {
