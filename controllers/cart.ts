@@ -1,4 +1,3 @@
-import { CartItem } from './../node_modules/.prisma/client/index.d';
 import prisma from "../database/prismaClient";
 import { Response } from "express";
 import { AuthRequest } from "../types/express";
@@ -147,7 +146,7 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
                 }
             })
         } else {
-            updatedCartItem =await prisma.cartItem.create({
+            updatedCartItem = await prisma.cartItem.create({
                 data: {
                     cartId: existingCart!.id,
                     productId: (productId),
@@ -164,8 +163,8 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
                 cartItemId: updatedCartItem.id,
                 productId: updatedCartItem.product.id,
                 productName: updatedCartItem.product.name,
-                productPrice: updatedCartItem.product.price,
                 quantity: updatedCartItem.quantity,
+                totalPrice: updatedCartItem.product.price * updatedCartItem.quantity,
             }
         })
     } catch (error) {
@@ -236,8 +235,8 @@ export const updateCartController = async (req: AuthRequest, res: Response) => {
             data: {
                 productId: updatedCartItem.product.id,
                 productName: updatedCartItem.product.name,
-                productPrice: updatedCartItem.product.price,
                 quantity: updatedCartItem.quantity,
+                totalPrice: updatedCartItem.product.price * updatedCartItem.quantity,
             }
         })
     } catch (error) {
