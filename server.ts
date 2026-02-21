@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import userRoutes from "./routes/users";
 import categoryRoutes from "./routes/category";
 import productRoutes from "./routes/products";
+import cartRoutes from "./routes/cart";
 
 dotenv.config();
 
@@ -15,6 +16,8 @@ app.use(express.json());
 app.use("/api", userRoutes);
 app.use("/api", categoryRoutes);
 app.use("/api", productRoutes);
+app.use("/api", cartRoutes);
+
 
 app.get('/', (req, res) => {
   res.send('E-Commerce API by King Dean');

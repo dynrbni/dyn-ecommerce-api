@@ -1,10 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
+import { AuthRequest } from "../types/express";
 import jwt from "jsonwebtoken";
 
 const secret = process.env.JWT_SECRET as string;
 
 export const JwtVerify = (
-    req: Request,
+    req: AuthRequest,
     res: Response,
     next: NextFunction
 ) => {
@@ -25,6 +26,9 @@ export const JwtVerify = (
                 message: "Unauthorized - invalid token",
             });
         }
+        req.user = { 
+            id: decoded.id 
+        };
         next();
     });
 };

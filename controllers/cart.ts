@@ -1,0 +1,126 @@
+import prisma from "../database/prismaClient";
+import { Response } from "express";
+import { AuthRequest } from "../types/express";
+
+export const getUserCartController = async (req: AuthRequest, res: Response) => {
+    try {
+        const existingCart = await prisma.cart.findFirst({
+            where:{
+                userId: String(req.user!.id),
+            }
+        })
+        if(!existingCart){
+            return res.status(404).json({
+                msg: "Keranjang tidak ditemukan",
+            })
+        }
+        const cartItems = await prisma.cartItem.findMany({
+            where: {
+                cartId: existingCart.id,
+            },
+            include: {
+                product: true,
+            }
+        })
+        res.status(200).json({
+            msg: "Berhasil mendapatkan data keranjang",
+            data: {
+                idCart: existingCart.id,
+                items: cartItems.map((item) => ({
+                    productId: item.product.id,
+                    productName: item.product.name,
+                    productPrice: item.product.price,
+                    quantity: item.quantity,
+                }))
+            }
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            msg: "Internal Server Error",
+        })
+    }
+}
+
+export const addToCartController = async (req: AuthRequest, res: Response) => {
+    try {
+        const { productId, quantity } = req.body;
+        if (!productId || !quantity) {
+            return res.status(400).json({
+                msg: "Product ID dan Quantity harus diisi",
+            })
+        }
+        if (quantity <= 0){
+            return res.status(400).json({
+                msg: "Quantity harus lebih besar dari 0",
+            })
+        }
+        const productNotFound = await prisma.product.findFirst({
+            where: {
+                id: (productId),
+            }
+        })
+        if (!productNotFound){
+            return res.status(404).json({
+                msg: "Produk tidak ditemukan",
+            })
+        }
+        let existingCart = await prisma.cart.findUnique({
+            where: {
+                userId: req.user!.id,
+            }
+        })  
+        if(!existingCart){
+            existingCart = await prisma.cart.create({
+                data: {
+                    userId: req.user!.id,
+                }
+            })
+        }
+        const existingItem = await prisma.cartItem.findFirst({
+            where: {
+                cartId: existingCart!.id,
+                productId: String(productId),
+            }
+        })
+        let updatedCartItem;
+        if (existingItem){
+            updatedCartItem = await prisma.cartItem.update({
+                where: {
+                    id: existingItem.id,
+                },
+                data: {
+                    quantity: existingItem.quantity + quantity,
+                },
+                include: {
+                    product: true,
+                }
+            })
+        } else {
+            updatedCartItem =await prisma.cartItem.create({
+                data: {
+                    cartId: existingCart!.id,
+                    productId: (productId),
+                    quantity,
+                },
+                include: {
+                    product: true,
+                }
+            })
+        }
+        res.status(201).json({
+            msg: "Berhasil menambahkan produk ke keranjang",
+            data: {
+                productId: updatedCartItem.product.id,
+                productName: updatedCartItem.product.name,
+                productPrice: updatedCartItem.product.price,
+                quantity: updatedCartItem.quantity,
+            }
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            msg: "Internal Server Error",
+        })
+    }
+}
