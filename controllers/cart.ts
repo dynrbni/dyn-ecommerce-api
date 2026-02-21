@@ -24,8 +24,8 @@ export const getUserCartController = async (req: AuthRequest, res: Response) => 
         })
         res.status(200).json({
             msg: "Berhasil mendapatkan data keranjang",
+            idCart: existingCart.id,
             data: {
-                idCart: existingCart.id,
                 items: cartItems.map((item) => ({
                     productId: item.product.id,
                     productName: item.product.name,
@@ -116,6 +116,123 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
                 productPrice: updatedCartItem.product.price,
                 quantity: updatedCartItem.quantity,
             }
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            msg: "Internal Server Error",
+        })
+    }
+}
+
+export const updateCartController = async (req: AuthRequest, res: Response) => {
+    try {
+        const { productId, quantity } = req.body;
+        if (!productId || !quantity) {
+            return res.status(400).json({
+                msg: "Product ID dan Quantity harus diisi",
+            })
+        }
+        if (quantity <= 0){
+            return res.status(400).json({
+                msg: "Quantity tidak boleh kosong",
+            })
+        }
+        const productNotFound = await prisma.product.findFirst({
+            where: {
+                id: (productId),
+            }
+        })
+        if (!productNotFound){
+            return res.status(404).json({
+                msg: "Produk tidak ditemukan",
+            })
+        }
+        const existingCart = await prisma.cart.findUnique({
+            where: {
+                userId: req.user!.id,
+            }
+        })
+        if(!existingCart){
+            return res.status(404).json({
+                msg: "Keranjang tidak ditemukan",
+            })
+        }
+        const existingItem = await prisma.cartItem.findFirst({
+            where: {
+                cartId: existingCart.id,
+                productId: String(productId),
+            }
+        })
+        if (!existingItem){
+            return res.status(404).json({
+                msg: "Produk tidak ditemukan di keranjang",
+            })
+        }
+        const updatedCartItem = await prisma.cartItem.update({
+            where: {
+                id: existingItem.id,
+            },
+            data: {
+                quantity,
+            },
+            include: {
+                product: true,
+            }
+        })
+        res.status(200).json({
+            msg: "Berhasil memperbarui produk di keranjang",
+            data: {
+                productId: updatedCartItem.product.id,
+                productName: updatedCartItem.product.name,
+                productPrice: updatedCartItem.product.price,
+                quantity: updatedCartItem.quantity,
+            }
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            msg: "Internal Server Error",
+        })
+    }
+}
+
+export const removeItemCartController = async (req: AuthRequest, res: Response) => {
+    try {
+        const { productId } = req.body;
+        if(!productId){
+            return res.status(400).json({
+                msg: "Product ID harus diisi",
+            })
+        }
+        const existingCart = await prisma.cart.findUnique({
+            where: {
+                userId: req.user!.id,
+            }
+        })
+        if (!existingCart){
+            return res.status(404).json({
+                msg: "Keranjang tidak ditemukan"
+            })
+        }
+        const existingItem = await prisma.cartItem.findFirst({
+            where: {
+                cartId: existingCart.id,
+                productId: String(productId),
+            }
+        })
+        if (!existingItem){
+            return res.status(404).json({
+                msg: "Produk tidak ditemukan di keranjang",
+            })
+        }
+        await prisma.cartItem.delete({
+            where: {
+                id: existingItem.id,
+            }
+        })
+        res.status(200).json({
+            msg: "Berhasil menghapus produk dari keranjang",
         })
     } catch (error) {
         console.log(error);
