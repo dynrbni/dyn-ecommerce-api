@@ -4,7 +4,7 @@ import userRoutes from "./routes/users";
 import categoryRoutes from "./routes/category";
 import productRoutes from "./routes/products";
 import cartRoutes from "./routes/cart";
-import orderRoutes from "./routes/orders";
+// import orderRoutes from "./routes/orders";
 
 dotenv.config();
 
@@ -18,7 +18,7 @@ app.use("/api", userRoutes);
 app.use("/api", categoryRoutes);
 app.use("/api", productRoutes);
 app.use("/api", cartRoutes);
-app.use("/api", orderRoutes);
+// app.use("/api", orderRoutes);
 
 
 app.get('/', (req, res) => {

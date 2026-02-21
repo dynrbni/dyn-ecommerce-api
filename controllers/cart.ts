@@ -1,3 +1,4 @@
+import { CartItem } from './../node_modules/.prisma/client/index.d';
 import prisma from "../database/prismaClient";
 import { Response } from "express";
 import { AuthRequest } from "../types/express";
@@ -27,12 +28,59 @@ export const getUserCartController = async (req: AuthRequest, res: Response) => 
             idCart: existingCart.id,
             data: {
                 items: cartItems.map((item) => ({
+                    cartItemId: item.id,
                     productId: item.product.id,
                     productName: item.product.name,
-                    productPrice: item.product.price,
                     quantity: item.quantity,
+                    totalPrice: item.product.price * item.quantity,
                 }))
             }
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            msg: "Internal Server Error",
+        })
+    }
+}
+
+export const getItemCartByIdController = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const existingCart = await prisma.cart.findFirst({
+            where: {
+                userId: String(req.user!.id),
+            },
+        })
+        if (!existingCart){
+            return res.status(404).json({
+                msg: "Keranjang tidak ditemukan"
+            })
+        }
+        const cartItem = await prisma.cartItem.findFirst({
+            where: {
+                cartId: existingCart.id,
+                id: String(id),
+            },
+            include: {
+                product: true,
+            }
+        })
+        if (!cartItem){
+            return res.status(404).json({
+                msg: "Item keranjang tidak ditemukan"
+            })
+        }
+        res.status(200).json({
+            msg: "Berhasil mendapatkan item keranjang",
+            idCart: existingCart.id,
+            data: {
+                cartItemId: cartItem.id,
+                productId: cartItem.productId,
+                productName: cartItem.product.name,
+                quantity: cartItem.quantity,
+                totalPrice: cartItem.product.price * cartItem.quantity,
+            },
         })
     } catch (error) {
         console.log(error);
@@ -65,11 +113,13 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
                 msg: "Produk tidak ditemukan",
             })
         }
+        //cek user udh punya cart tw blm
         let existingCart = await prisma.cart.findUnique({
             where: {
                 userId: req.user!.id,
             }
         })  
+        //buat cart baru
         if(!existingCart){
             existingCart = await prisma.cart.create({
                 data: {
@@ -111,6 +161,7 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
         res.status(201).json({
             msg: "Berhasil menambahkan produk ke keranjang",
             data: {
+                cartItemId: updatedCartItem.id,
                 productId: updatedCartItem.product.id,
                 productName: updatedCartItem.product.name,
                 productPrice: updatedCartItem.product.price,
