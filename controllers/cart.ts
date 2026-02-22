@@ -164,7 +164,6 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
                 productId: updatedCartItem.product.id,
                 productName: updatedCartItem.product.name,
                 quantity: updatedCartItem.quantity,
-                totalPrice: updatedCartItem.product.price * updatedCartItem.quantity,
             }
         })
     } catch (error) {
