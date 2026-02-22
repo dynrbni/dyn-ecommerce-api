@@ -1,8 +1,7 @@
-import { ulid } from './../node_modules/zod/src/v4/core/regexes';
+import { createTransaction } from '../services/midtrans';
 import prisma from "../database/prismaClient";
 import { Response } from "express";
 import { AuthRequest } from "../types/express"; 
-import { stat } from 'node:fs';
 
 export const getAllUsersOrdersController = async (req: AuthRequest, res: Response) => {
     try {
@@ -147,6 +146,20 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                     items: true,
                 }
             })
+            //midtrans
+            const productName = selectedCartItem.map(item => item.product.name).join(", ");
+            const transaction = await createTransaction(createOrder.id, totalPrice, productName);
+
+            await tx.payment.create({
+                data: {
+                    orderId: createOrder.id,
+                    transactionId: null,
+                    transactionStatus: "PENDING",
+                    grossAmount: totalPrice,
+                    signatureKey: transaction.token
+                }
+            })
+
             for (const item of selectedCartItem){
                 const product = await tx.product.findUnique({
                     where: {
@@ -172,16 +185,6 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                 if (update.count === 0){
                     throw new Error(`Stok produk ${product.name} tidak cukup`)
                  }
-                await tx.product.update({
-                    where: {
-                        id: item.productId,
-                    },
-                    data: {
-                        stock:{
-                            decrement: item.quantity,
-                        },
-                    }
-                })
             }
             await tx.cartItem.deleteMany({
                 where: {
@@ -189,15 +192,16 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                     cartId: existingCart.id,
                 }
             })
-            return createOrder;
+            return { order: createOrder, transaction };
         })
         res.status(201).json({
             msg: "Berhasil checkout produk",
             data: {
-                orderId: order.id,
-                totalPrice: order.totalPrice,
-                status: order.status,
-                items: order.items.map(item => ({
+                orderId: order.order.id,
+                totalPrice: order.order.totalPrice,
+                status: order.order.status,
+                paymentUrl: order.transaction.redirect_url,
+                items: order.order.items.map(item => ({
                     productId: item.productId,
                     quantity: item.quantity,
                     priceSnapshot: item.priceSnapshot,
@@ -279,7 +283,19 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
                     items: true,
                 }
             })
-            return order;
+              //midtrans
+            const transaction = await createTransaction(order.id, order.totalPrice, product.name);
+
+            await tx.payment.create({
+                data: {
+                    orderId: order.id,
+                    transactionId: null,
+                    transactionStatus: "PENDING",
+                    grossAmount: order.totalPrice,
+                    signatureKey: transaction.token
+                }
+            })
+            return { ...order, paymentUrl: transaction.redirect_url };
         })
         res.status(201).json({
             msg: "Berhasil checkout produk",
@@ -287,8 +303,10 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
                 orderId: order.id,
                 totalPrice: order.totalPrice,
                 status: order.status,
+                paymentUrl: order.paymentUrl,
                 items: order.items.map(item => ({
                     productId: item.productId,
+                    productName: product.name,
                     quantity: item.quantity,
                     priceSnapshot: item.priceSnapshot,
                 }))
