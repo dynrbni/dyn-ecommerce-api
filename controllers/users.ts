@@ -25,7 +25,7 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 export const getUserByIdController = async (req: Request, res: Response) =>{
     try {
         const { id } = req.params;
-        const user = await prisma.user.findFirst({
+        const user = await prisma.user.findUnique({
             where: {
                 id: String(id),
             }
@@ -51,7 +51,7 @@ export const createUserController = async (req: Request, res: Response) => {
     try {
          const { name, email, password } = req.body;
          const hashedPassword = await bcrypt.hash(password, 10)
-         const existingUser = await prisma.user.findFirst({
+         const existingUser = await prisma.user.findUnique({
             where: {
                 email,
             }

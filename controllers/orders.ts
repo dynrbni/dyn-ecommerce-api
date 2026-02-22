@@ -1,7 +1,6 @@
 import prisma from "../database/prismaClient";
 import { Response } from "express";
-import { AuthRequest } from "../types/express";
-import { date } from "zod";
+import { AuthRequest } from "../types/express"; 
 
 export const getAllUsersOrdersController = async (req: AuthRequest, res: Response) => {
     try {
@@ -47,10 +46,9 @@ export const getOrderByIdController = async (req: AuthRequest, res: Response) =>
     try {
         const { id } = req.params;
         const userId = req.user!.id;
-        const order = await prisma.order.findFirst({
+        const order = await prisma.order.findUnique({
             where: {
                 id: String(id),
-                userId: userId,
             },
             include: {
                 items: {
@@ -60,6 +58,11 @@ export const getOrderByIdController = async (req: AuthRequest, res: Response) =>
                 }
             }
         })
+        if (!order || order.userId !== userId){
+            return res.status(404).json({
+                msg: "Order tidak ditemukan",
+            })
+        }
         if (!order){
             return res.status(404).json({
                 msg: "Order tidak ditemukan",
@@ -96,7 +99,7 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                 msg: "Cart Item ID harus diisi",
             })
         }
-        const existingCart = await prisma.cart.findFirst({
+        const existingCart = await prisma.cart.findUnique({
             where: {
                 userId: req.user!.id,
             }
@@ -142,7 +145,7 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                 }
             })
             for (const item of selectedCartItem){
-                const product = await tx.product.findFirst({
+                const product = await tx.product.findUnique({
                     where: {
                         id: item.productId,
                     }
@@ -171,6 +174,93 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                 }
             })
             return createOrder;
+        })
+        res.status(201).json({
+            msg: "Berhasil checkout produk",
+            data: {
+                orderId: order.id,
+                totalPrice: order.totalPrice,
+                items: order.items.map(item => ({
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    priceSnapshot: item.priceSnapshot,
+                }))
+            }
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            msg: "Internal Server Error",
+        })
+    }
+}
+
+export const checkoutNowController = async (req: AuthRequest, res: Response) => {
+    try {
+        const { productId, quantity } = req.body;
+        if (!productId || !quantity){
+            return res.status(400).json({
+                msg: "Product ID dan quantity harus diisi",
+            })
+        }
+        if (quantity <= 0){
+            return res.status(400).json({
+                msg: "Quantity harus lebih dari 0",
+            })
+        }
+        const productDeleted = await prisma.product.findUnique({
+            where: {
+                id: String(productId),
+            },
+        })
+        if (!productDeleted || productDeleted.deletedAt !== null){
+            return res.status(404).json({
+                msg: "Produk tidak ditemukan",
+            })
+        }
+        const product = await prisma.product.findUnique({
+            where: {
+                id: String(productId),
+            }
+        })
+        if (!product){
+            return res.status(404).json({
+                msg: "Produk tidak ditemukan",
+            })
+        }
+        if (product.stock < quantity){
+            return res.status(400).json({
+                msg: `Stok produk ${product.name} tidak cukup`,
+            })
+        }
+        const order = await prisma.$transaction(async (tx) => {
+            const createorder = await tx.order.create({
+                data: {
+                    userId: req.user!.id,
+                    totalPrice: product.price * quantity,
+                    items: {
+                        create: {
+                            productId: product.id,
+                            quantity,
+                            priceSnapshot: product.price,
+                        }
+                    }
+                },
+                include: {
+                    items: true,
+                }
+            })
+            await tx.product.update({
+                where: {
+                    id: String(productId),
+                },
+                data: {
+                    stock: {
+                        decrement: quantity,
+                 }
+                },
+            })
+            return createorder;
         })
         res.status(201).json({
             msg: "Berhasil checkout produk",

@@ -5,7 +5,7 @@ import { AuthRequest } from "../types/express";
 
 export const getUserCartController = async (req: AuthRequest, res: Response) => {
     try {
-        const existingCart = await prisma.cart.findFirst({
+        const existingCart = await prisma.cart.findUnique({
             where:{
                 userId: String(req.user!.id),
             }
@@ -47,7 +47,7 @@ export const getUserCartController = async (req: AuthRequest, res: Response) => 
 export const getItemCartByIdController = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const existingCart = await prisma.cart.findFirst({
+        const existingCart = await prisma.cart.findUnique({
             where: {
                 userId: String(req.user!.id),
             },
@@ -57,16 +57,15 @@ export const getItemCartByIdController = async (req: AuthRequest, res: Response)
                 msg: "Keranjang tidak ditemukan"
             })
         }
-        const cartItem = await prisma.cartItem.findFirst({
+        const cartItem = await prisma.cartItem.findUnique({
             where: {
-                cartId: existingCart.id,
                 id: String(id),
             },
             include: {
                 product: true,
             }
         })
-        if (!cartItem){
+        if (!cartItem || cartItem.cartId !== existingCart.id){
             return res.status(404).json({
                 msg: "Item keranjang tidak ditemukan"
             })
@@ -93,13 +92,12 @@ export const getItemCartByIdController = async (req: AuthRequest, res: Response)
 export const addToCartController = async (req: AuthRequest, res: Response) => {
     try {
         const { productId, quantity } = req.body;
-        const productDeleted = await prisma.product.findFirst({
+        const productDeleted = await prisma.product.findUnique({
             where: {
                 id: String(productId),
-                deletedAt: null,
             }
         })
-        if (!productDeleted){
+        if (!productDeleted || productDeleted.deletedAt !== null){
             return res.status(404).json({
                 msg: "Produk tidak ditemukan",
             })
@@ -114,12 +112,12 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
                 msg: "Quantity harus lebih besar dari 0",
             })
         }
-        const productNotFound = await prisma.product.findFirst({
+        const productNotFound = await prisma.product.findUnique({
             where: {
-                id: (productId),
+                id: String(productId),
             }
         })
-        if (!productNotFound){
+        if (!productNotFound || productNotFound.deletedAt !== null){
             return res.status(404).json({
                 msg: "Produk tidak ditemukan",
             })
@@ -140,7 +138,7 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
         }
         const existingItem = await prisma.cartItem.findFirst({
             where: {
-                cartId: existingCart!.id,
+                cartId: existingCart.id,
                 productId: String(productId),
             }
         })
@@ -189,13 +187,12 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
 export const updateCartController = async (req: AuthRequest, res: Response) => {
     try {
         const { productId, quantity } = req.body;
-        const productDeleted = await prisma.product.findFirst({
+        const productDeleted = await prisma.product.findUnique({
             where: {
                 id: String(productId),
-                deletedAt: null,
             }
         })
-        if (!productDeleted){
+        if (!productDeleted || productDeleted.deletedAt !== null){
             return res.status(404).json({
                 msg: "Produk tidak ditemukan",
             })
@@ -210,7 +207,7 @@ export const updateCartController = async (req: AuthRequest, res: Response) => {
                 msg: "Quantity tidak boleh kosong",
             })
         }
-        const productNotFound = await prisma.product.findFirst({
+        const productNotFound = await prisma.product.findUnique({
             where: {
                 id: (productId),
             }

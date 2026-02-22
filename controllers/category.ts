@@ -23,7 +23,7 @@ export const getAllCategoriesController = async (req: Request, res: Response) =>
 export const getCategoriesByIdController = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const category = await prisma.category.findFirst({
+        const category = await prisma.category.findUnique({
             where: {
                 id: String(id),
             }
@@ -48,7 +48,7 @@ export const getCategoriesByIdController = async (req: Request, res: Response) =
 export const createCategoryController = async (req: Request, res: Response) => {
     try {
         const { name } = req.body;
-        const existingCategory = await prisma.category.findFirst({
+        const existingCategory = await prisma.category.findUnique({
             where:{
                 name,
             }
