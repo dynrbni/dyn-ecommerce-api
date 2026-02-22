@@ -94,6 +94,7 @@ model Order {
 
   user       User         @relation(fields: [userId], references: [id])
   items      OrderItem[]
+  payment    Payment?
 
   createdAt  DateTime     @default(now())
 }
@@ -107,4 +108,20 @@ model OrderItem {
 
   order         Order    @relation(fields: [orderId], references: [id])
   product       Product  @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  orderId           String   @unique
+  transactionId     String?
+  paymentType       String?
+  transactionStatus String?
+  fraudStatus       String?
+  grossAmount       Int
+  signatureKey      String?
+
+  order             Order    @relation(fields: [orderId], references: [id])
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
