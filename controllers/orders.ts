@@ -1,6 +1,7 @@
 import prisma from "../database/prismaClient";
 import { Response } from "express";
 import { AuthRequest } from "../types/express";
+import { date } from "zod";
 
 export const getAllUsersOrdersController = async (req: AuthRequest, res: Response) => {
     try {
@@ -23,6 +24,7 @@ export const getAllUsersOrdersController = async (req: AuthRequest, res: Respons
                 orders: orders.map(order => ({
                     orderId: order.id,
                     totalPrice: order.totalPrice,
+                    status: order.status,
                     items: order.items.map(item => ({
                         userId: order.userId,
                         productId: item.productId,
@@ -30,6 +32,51 @@ export const getAllUsersOrdersController = async (req: AuthRequest, res: Respons
                         quantity: item.quantity,
                         priceSnapshot: item.priceSnapshot,
                     }))
+                }))
+            }
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            msg: "Internal Server Error",
+        })
+    }
+}
+
+export const getOrderByIdController = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!.id;
+        const order = await prisma.order.findFirst({
+            where: {
+                id: String(id),
+                userId: userId,
+            },
+            include: {
+                items: {
+                    include: {
+                        product: true,
+                    }
+                }
+            }
+        })
+        if (!order){
+            return res.status(404).json({
+                msg: "Order tidak ditemukan",
+            })
+        }
+        res.status(200).json({
+            msg: "Berhasil mendapatkan data order",
+            data: {
+                orderId: order.id,
+                totalPrice: order.totalPrice,
+                status: order.status,
+                items: order.items.map(item => ({
+                    userId: order.userId,
+                    productId: item.productId,
+                    productName: item.product.name,
+                    quantity: item.quantity,
+                    priceSnapshot: item.priceSnapshot,
                 }))
             }
         })
@@ -70,7 +117,7 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
         })
         if(!selectedCartItem.length){
             return res.status(404).json({
-                msg: "Cart Item tidak ditemukan",
+                msg: "Produk tidak ditemukan",
             })
         }
         let totalPrice = 0;
@@ -94,23 +141,32 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                     items: true,
                 }
             })
-            const item = selectedCartItem[0];
-            await tx.product.update({
-                where: {
-                    id: item.productId,
-                },
-                data: {
-                    stock: {
-                        decrement: item.quantity,
+            for (const item of selectedCartItem){
+                const product = await tx.product.findFirst({
+                    where: {
+                        id: item.productId,
                     }
+                })
+                if (!product){
+                    throw new Error(`Produk tidak ditemukan`)
                 }
-            })
-            if (!selectedCartItem.length){
-                throw new Error("Item tidak di temukan");
+                if (product.stock < item.quantity){
+                    throw new Error(`Stok produk ${product.name} tidak cukup`)
+                }
+                await tx.product.update({
+                    where: {
+                        id: item.productId,
+                    },
+                    data: {
+                        stock:{
+                            decrement: item.quantity,
+                        },
+                    }
+                })
             }
             await tx.cartItem.deleteMany({
                 where: {
-                    id: String(cartItemId),
+                    id: {in: cartItemId},
                     cartId: existingCart.id,
                 }
             })
