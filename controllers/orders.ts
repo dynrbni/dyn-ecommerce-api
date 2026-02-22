@@ -2,6 +2,7 @@ import { ulid } from './../node_modules/zod/src/v4/core/regexes';
 import prisma from "../database/prismaClient";
 import { Response } from "express";
 import { AuthRequest } from "../types/express"; 
+import { stat } from 'node:fs';
 
 export const getAllUsersOrdersController = async (req: AuthRequest, res: Response) => {
     try {
@@ -133,6 +134,7 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                 data: {
                     userId: req.user!.id,
                     totalPrice,
+                    status: "PENDING",
                     items:{
                         create: selectedCartItem.map(item => ({
                             productId: item.productId,
@@ -194,6 +196,7 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
             data: {
                 orderId: order.id,
                 totalPrice: order.totalPrice,
+                status: order.status,
                 items: order.items.map(item => ({
                     productId: item.productId,
                     quantity: item.quantity,
@@ -251,10 +254,19 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
             if (update.count === 0){
                 throw new Error("Stok produk tidak cukup");
              }
-            const createorder = await tx.order.create({
+            const freshProduct = await tx.product.findUnique({
+                where: {
+                    id: String(productId),
+                }
+            })
+            if (!freshProduct){
+                throw new Error("Produk tidak ditemukan");
+             }
+            const order = await tx.order.create({
                 data: {
                     userId: req.user!.id,
                     totalPrice: product.price * quantity,
+                    status: "PENDING",
                     items: {
                         create: {
                             productId: product.id,
@@ -267,23 +279,14 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
                     items: true,
                 }
             })
-            await tx.product.update({
-                where: {
-                    id: String(productId),
-                },
-                data: {
-                    stock: {
-                        decrement: quantity,
-                 }
-                },
-            })
-            return createorder;
+            return order;
         })
         res.status(201).json({
             msg: "Berhasil checkout produk",
             data: {
                 orderId: order.id,
                 totalPrice: order.totalPrice,
+                status: order.status,
                 items: order.items.map(item => ({
                     productId: item.productId,
                     quantity: item.quantity,
@@ -291,9 +294,13 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
                 }))
             }
         })
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({
+    } catch (error: any) {
+       if (error.message === "Stok produk tidak cukup"){
+            return res.status(400).json({
+                msg: error.message,
+             })
+       }
+        return res.status(500).json({
             msg: "Internal Server Error",
         })
     }
