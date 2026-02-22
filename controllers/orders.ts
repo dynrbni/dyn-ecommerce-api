@@ -1,3 +1,4 @@
+import { ulid } from './../node_modules/zod/src/v4/core/regexes';
 import prisma from "../database/prismaClient";
 import { Response } from "express";
 import { AuthRequest } from "../types/express"; 
@@ -153,9 +154,22 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                 if (!product){
                     throw new Error(`Produk tidak ditemukan`)
                 }
-                if (product.stock < item.quantity){
+               const update = await tx.product.updateMany({
+                    where: {
+                        id: item.productId,
+                        stock: {
+                            gte: item.quantity,
+                        },
+                    },
+                    data: {
+                        stock: {
+                            decrement: item.quantity,
+                        }
+                    }
+                })
+                if (update.count === 0){
                     throw new Error(`Stok produk ${product.name} tidak cukup`)
-                }
+                 }
                 await tx.product.update({
                     where: {
                         id: item.productId,
@@ -208,32 +222,35 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
                 msg: "Quantity harus lebih dari 0",
             })
         }
-        const productDeleted = await prisma.product.findUnique({
-            where: {
-                id: String(productId),
-            },
-        })
-        if (!productDeleted || productDeleted.deletedAt !== null){
-            return res.status(404).json({
-                msg: "Produk tidak ditemukan",
-            })
-        }
         const product = await prisma.product.findUnique({
             where: {
                 id: String(productId),
             }
         })
-        if (!product){
+        if (!product || product.deletedAt !== null){
             return res.status(404).json({
                 msg: "Produk tidak ditemukan",
             })
         }
-        if (product.stock < quantity){
-            return res.status(400).json({
-                msg: `Stok produk ${product.name} tidak cukup`,
-            })
-        }
+
         const order = await prisma.$transaction(async (tx) => {
+            const update = await tx.product.updateMany({
+                where: {
+                    id: String(productId),
+                    deletedAt: null,
+                    stock: {
+                        gte: quantity,
+                    }
+                },
+                data: {
+                    stock: {
+                        decrement: quantity,
+                    }
+                }
+            })
+            if (update.count === 0){
+                throw new Error("Stok produk tidak cukup");
+             }
             const createorder = await tx.order.create({
                 data: {
                     userId: req.user!.id,
