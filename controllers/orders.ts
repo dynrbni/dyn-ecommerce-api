@@ -149,10 +149,11 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
             //midtrans
             const productName = selectedCartItem.map(item => item.product.name).join(", ");
             const transaction = await createTransaction(createOrder.id, totalPrice, productName);
-
+           
             await tx.payment.create({
                 data: {
                     orderId: createOrder.id,
+                    midtransOrderId: createOrder.id,
                     transactionId: null,
                     transactionStatus: "PENDING",
                     grossAmount: totalPrice,
@@ -192,7 +193,7 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                     cartId: existingCart.id,
                 }
             })
-            return { order: createOrder, transaction };
+            return { order: createOrder, transaction: transaction.redirect_url };
         })
         res.status(201).json({
             msg: "Berhasil checkout produk",
@@ -200,7 +201,7 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                 orderId: order.order.id,
                 totalPrice: order.order.totalPrice,
                 status: order.order.status,
-                paymentUrl: order.transaction.redirect_url,
+                paymentUrl: order.transaction,
                 items: order.order.items.map(item => ({
                     productId: item.productId,
                     quantity: item.quantity,
@@ -289,6 +290,7 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
             await tx.payment.create({
                 data: {
                     orderId: order.id,
+                    midtransOrderId: order.id,
                     transactionId: null,
                     transactionStatus: "PENDING",
                     grossAmount: order.totalPrice,

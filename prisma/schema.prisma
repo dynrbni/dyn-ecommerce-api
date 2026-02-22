@@ -119,6 +119,7 @@ model Payment {
   fraudStatus       String?
   grossAmount       Int
   signatureKey      String?
+  midtransOrderId    String?
 
   order             Order    @relation(fields: [orderId], references: [id])
 
