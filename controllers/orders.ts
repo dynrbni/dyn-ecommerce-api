@@ -19,7 +19,19 @@ export const getAllUsersOrdersController = async (req: AuthRequest, res: Respons
         })
         res.status(200).json({
             msg: "Berhasil mendapatkan data orders",
-            data: orders,
+            data: {
+                orders: orders.map(order => ({
+                    orderId: order.id,
+                    totalPrice: order.totalPrice,
+                    items: order.items.map(item => ({
+                        userId: order.userId,
+                        productId: item.productId,
+                        productName: item.product.name,
+                        quantity: item.quantity,
+                        priceSnapshot: item.priceSnapshot,
+                    }))
+                }))
+            }
         })
     } catch (error) {
         console.log(error);

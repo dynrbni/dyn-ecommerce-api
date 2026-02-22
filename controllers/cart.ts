@@ -1,3 +1,4 @@
+import { parse } from './../node_modules/zod/src/v4/classic/parse';
 import prisma from "../database/prismaClient";
 import { Response } from "express";
 import { AuthRequest } from "../types/express";
@@ -92,6 +93,17 @@ export const getItemCartByIdController = async (req: AuthRequest, res: Response)
 export const addToCartController = async (req: AuthRequest, res: Response) => {
     try {
         const { productId, quantity } = req.body;
+        const productDeleted = await prisma.product.findFirst({
+            where: {
+                id: String(productId),
+                deletedAt: null,
+            }
+        })
+        if (!productDeleted){
+            return res.status(404).json({
+                msg: "Produk tidak ditemukan",
+            })
+        }
         if (!productId || !quantity) {
             return res.status(400).json({
                 msg: "Product ID dan Quantity harus diisi",
@@ -177,6 +189,17 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
 export const updateCartController = async (req: AuthRequest, res: Response) => {
     try {
         const { productId, quantity } = req.body;
+        const productDeleted = await prisma.product.findFirst({
+            where: {
+                id: String(productId),
+                deletedAt: null,
+            }
+        })
+        if (!productDeleted){
+            return res.status(404).json({
+                msg: "Produk tidak ditemukan",
+            })
+        }
         if (!productId || !quantity) {
             return res.status(400).json({
                 msg: "Product ID dan Quantity harus diisi",
