@@ -6,6 +6,7 @@ import productRoutes from "./routes/products";
 import cartRoutes from "./routes/cart";
 import orderRoutes from "./routes/orders";
 import { midtransWebhookController } from './controllers/midtrans';
+import { limiter } from './middleware/rateLimit';
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(limiter); 
 
 //routes API
 app.use("/api", userRoutes);

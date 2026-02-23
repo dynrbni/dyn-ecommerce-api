@@ -323,18 +323,8 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
                 msg: error.message,
              })
        }
+       console.log(error);
         return res.status(500).json({
-            msg: "Internal Server Error",
-        })
-    }
-}
-
-export const updateOrderController = async (req: AuthRequest, res: Response) => {
-    try {
-        const { id } = req.params;
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({
             msg: "Internal Server Error",
         })
     }
