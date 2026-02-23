@@ -203,6 +203,7 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
             data: {
                 orderId: order.order.id,
                 totalPrice: order.order.totalPrice,
+                paymentStatus: order.order.paymentStatus,
                 shippingStatus: order.order.shippingStatus,
                 paymentUrl: order.transaction,
                 items: order.order.items.map(item => ({
@@ -307,6 +308,7 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
             data: {
                 orderId: order.id,
                 totalPrice: order.totalPrice,
+                paymentStatus: order.paymentStatus,
                 shippingStatus: order.shippingStatus,
                 paymentUrl: order.paymentUrl,
                 items: order.items.map(item => ({
@@ -325,6 +327,61 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
        }
        console.log(error);
         return res.status(500).json({
+            msg: "Internal Server Error",
+        })
+    }
+}
+
+export const updateOrdersController = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { shippingStatus, paymentStatus } = req.body;
+        const order = await prisma.order.findUnique({
+            where: {
+                id: String(id),
+            }
+        })
+        if (!order || order.userId !== req.user!.id){
+            return res.status(404).json({
+                msg: "Order tidak ditemukan",
+            })
+        }
+
+        const updatedOrder = await prisma.order.update({
+            where: {
+                id: String(id),
+            },
+            data: {
+                shippingStatus,
+                paymentStatus,
+            },
+            include: {
+                items: {
+                    include: {
+                        product: true,
+                    }
+                }
+            }
+        })
+        res.status(200).json({
+            msg: "Berhasil mengupdate order",
+            data: {
+                orderId: updatedOrder.id,
+                totalPrice: updatedOrder.totalPrice,
+                paymentStatus: updatedOrder.paymentStatus,
+                shippingStatus: updatedOrder.shippingStatus,
+                items: updatedOrder.items.map(item => ({
+                    userId: updatedOrder.userId,
+                    productId: item.productId,
+                    productName: item.product.name,
+                    quantity: item.quantity,
+                    priceSnapshot: item.priceSnapshot,
+                }))
+            }
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
             msg: "Internal Server Error",
         })
     }
