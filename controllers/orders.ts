@@ -2,6 +2,7 @@ import { createTransaction } from '../services/midtrans';
 import prisma from "../database/prismaClient";
 import { Response } from "express";
 import { AuthRequest } from "../types/express"; 
+import { PaymentStatus } from '@prisma/client';
 
 export const getAllUsersOrdersController = async (req: AuthRequest, res: Response) => {
     try {
@@ -24,7 +25,8 @@ export const getAllUsersOrdersController = async (req: AuthRequest, res: Respons
                 orders: orders.map(order => ({
                     orderId: order.id,
                     totalPrice: order.totalPrice,
-                    status: order.status,
+                    PaymentStatus: order.paymentStatus,
+                    shippingStatus: order.shippingStatus,
                     items: order.items.map(item => ({
                         userId: order.userId,
                         productId: item.productId,
@@ -74,7 +76,7 @@ export const getOrderByIdController = async (req: AuthRequest, res: Response) =>
             data: {
                 orderId: order.id,
                 totalPrice: order.totalPrice,
-                status: order.status,
+                shippingStatus: order.shippingStatus,
                 items: order.items.map(item => ({
                     userId: order.userId,
                     productId: item.productId,
@@ -133,7 +135,8 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
                 data: {
                     userId: req.user!.id,
                     totalPrice,
-                    status: "PENDING",
+                    paymentStatus: "PENDING",
+                    shippingStatus: "NOT_SHIPPED",
                     items:{
                         create: selectedCartItem.map(item => ({
                             productId: item.productId,
@@ -200,7 +203,7 @@ export const checkoutFromCartController = async (req: AuthRequest, res: Response
             data: {
                 orderId: order.order.id,
                 totalPrice: order.order.totalPrice,
-                status: order.order.status,
+                shippingStatus: order.order.shippingStatus,
                 paymentUrl: order.transaction,
                 items: order.order.items.map(item => ({
                     productId: item.productId,
@@ -271,7 +274,7 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
                 data: {
                     userId: req.user!.id,
                     totalPrice: product.price * quantity,
-                    status: "PENDING",
+                    shippingStatus: "NOT_SHIPPED",
                     items: {
                         create: {
                             productId: product.id,
@@ -304,7 +307,7 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
             data: {
                 orderId: order.id,
                 totalPrice: order.totalPrice,
-                status: order.status,
+                shippingStatus: order.shippingStatus,
                 paymentUrl: order.paymentUrl,
                 items: order.items.map(item => ({
                     productId: item.productId,
@@ -321,6 +324,17 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
              })
        }
         return res.status(500).json({
+            msg: "Internal Server Error",
+        })
+    }
+}
+
+export const updateOrderController = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
             msg: "Internal Server Error",
         })
     }

@@ -15,11 +15,20 @@ enum Role {
   ADMIN
 }
 
-enum OrderStatus {
+enum PaymentStatus {
   PENDING
-  PAID
+  SUCCESS
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum ShippingStatus {
+  NOT_SHIPPED
+  PROCESSING
   SHIPPED
-  COMPLETED
+  DELIVERED
+  RETURNED
   CANCELLED
 }
 
@@ -90,7 +99,8 @@ model Order {
   id         String       @id @default(uuid())
   userId     String
   totalPrice Int
-  status     OrderStatus  @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  shippingStatus ShippingStatus  @default(NOT_SHIPPED)
 
   user       User         @relation(fields: [userId], references: [id])
   items      OrderItem[]
