@@ -8,16 +8,22 @@ import orderRoutes from "./routes/orders";
 import cors from "cors";
 import { midtransWebhookController } from './controllers/midtrans';
 import { limiter } from './middleware/rateLimit';
+import helmet from 'helmet';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(helmet({
+    contentSecurityPolicy: false
+  })
+);
 app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PATCH", "DELETE"],
-}));
+    origin: "*",
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+  })
+);
 app.use(express.json());
 app.use(limiter); 
 
