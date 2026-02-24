@@ -66,11 +66,6 @@ export const getOrderByIdController = async (req: AuthRequest, res: Response) =>
                 msg: "Order tidak ditemukan",
             })
         }
-        if (!order){
-            return res.status(404).json({
-                msg: "Order tidak ditemukan",
-            })
-        }
         res.status(200).json({
             msg: "Berhasil mendapatkan data order",
             data: {
