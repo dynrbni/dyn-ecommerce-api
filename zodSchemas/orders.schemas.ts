@@ -25,7 +25,7 @@ export const updateOrderSchema = z.object({
       "NOT_SHIPPED",
       "PROCESSING",
       "SHIPPED",
-      "COMPLETED",
+      "DELIVERED",
       "CANCELLED",
     ]).optional(),
 
