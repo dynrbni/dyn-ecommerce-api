@@ -8,7 +8,7 @@ import { authorizeRole } from "../middleware/roleValidation";
 
 const Router = express.Router();
 
-Router.get("/users", JwtVerify, getAllUsersController);
+Router.get("/users", JwtVerify, authorizeRole([Role.ADMIN]), getAllUsersController);
 Router.get("/users/:id", JwtVerify, getUserByIdController);
 Router.post("/login", zodValidation(loginUserSchema), loginUserController);
 Router.post("/register", zodValidation(createUserSchema), createUserController);
