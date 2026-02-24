@@ -331,7 +331,16 @@ export const updateOrdersController = async (req: AuthRequest, res: Response) =>
     try {
         const { id } = req.params;
         const { shippingStatus, paymentStatus } = req.body;
-
+        if (shippingStatus && !["NOT_SHIPPED", "SHIPPED", "DELIVERED"].includes(shippingStatus)){
+            return res.status(400).json({
+                msg: "Status pengiriman tidak valid",
+            })
+        }
+        if (paymentStatus && !["PENDING", "PAID", "FAILED"].includes(paymentStatus)){
+            return res.status(400).json({
+                msg: "Status pembayaran tidak valid",
+            })
+        }
         const updatedOrder = await prisma.order.update({
             where: {
                 id: String(id),
