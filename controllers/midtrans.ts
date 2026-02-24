@@ -1,10 +1,21 @@
 import { Request, Response } from "express";
+import crypto from "crypto";
 import prisma from "../database/prismaClient";
 
 export const midtransWebhookController = async (req: Request, res: Response) => {
   try {
     const payload = req.body;
-    const { order_id, transaction_status, transaction_id, fraud_status } = payload;
+    const { order_id, transaction_status, status_code, gross_amount, transaction_id, } = payload;
+    const serverKey = process.env.MIDTRANS_SERVER_KEY as string;
+    const hashedSignature = crypto
+     .createHash("sha512")
+     .update(order_id + status_code + gross_amount + serverKey)
+     .digest("hex");
+
+      if (hashedSignature !== payload.signature_key) {
+        console.log("Signature key tidak valid!");
+        return res.status(400).json({ msg: "Invalid signature key" });
+      }
 
     const payment = await prisma.payment.findUnique({
       where: { orderId: order_id },
@@ -37,7 +48,7 @@ export const midtransWebhookController = async (req: Request, res: Response) => 
           data: {
             transactionStatus: transaction_status,
             transactionId: transaction_id,
-            fraudStatus: fraud_status,
+            fraudStatus: payload.fraud_status || "accept",
           },
         }),
       ]);
