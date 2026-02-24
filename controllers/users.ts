@@ -109,9 +109,10 @@ export const loginUserController = async (req:Request, res: Response) => {
                 msg: "Email dan password wajib diisi"
             })
         }
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
             where: {
                 email,
+                deletedAt: null,
             }
         })
         if (!user){
