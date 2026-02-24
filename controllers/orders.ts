@@ -331,16 +331,6 @@ export const updateOrdersController = async (req: AuthRequest, res: Response) =>
     try {
         const { id } = req.params;
         const { shippingStatus, paymentStatus } = req.body;
-        const order = await prisma.order.findUnique({
-            where: {
-                id: String(id),
-            }
-        })
-        if (!order || order.userId !== req.user!.id){
-            return res.status(404).json({
-                msg: "Order tidak ditemukan",
-            })
-        }
 
         const updatedOrder = await prisma.order.update({
             where: {
