@@ -50,6 +50,11 @@ export const getUserByIdController = async (req: Request, res: Response) =>{
 export const createUserController = async (req: Request, res: Response) => {
     try {
          const { name, email, password } = req.body;
+         if (!name || !email || !password){
+            return res.status(400).json({
+                msg: "Semua fields wajib diisi"
+            })
+         }
          const hashedPassword = await bcrypt.hash(password, 10)
          const existingUser = await prisma.user.findUnique({
             where: {
@@ -68,12 +73,7 @@ export const createUserController = async (req: Request, res: Response) => {
                 password: hashedPassword,
             }
          })
-         if (!name || !email || !password){
-            return res.status(400).json({
-                msg: "Semua fields wajib diisi"
-            })
-         }
-         const token = generateToken({id: newUser.id});
+         const token = generateToken({id: newUser.id, role: newUser.role});
          res.status(201).json({
             msg: "Berhasil membuat user baru",
             data: newUser,
@@ -111,7 +111,7 @@ export const loginUserController = async (req:Request, res: Response) => {
                 msg: "Password Salah"
             })
         }
-        const token = generateToken({id: user.id});
+        const token = generateToken({id: user.id, role: user.role});
         res.status(200).json({
             msg: "Login berhasil!",
             hello: `Hey, Selamat datang kembali ${user.name} di E-Commerce!`,

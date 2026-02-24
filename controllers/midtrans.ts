@@ -6,7 +6,7 @@ export const midtransWebhookController = async (req: Request, res: Response) => 
   try {
     const payload = req.body;
     const { order_id, transaction_status, status_code, gross_amount, transaction_id, } = payload;
-    const serverKey = process.env.MIDTRANS_SERVER_KEY as string;
+    const serverKey = process.env.SERVER_KEY as string;
     const hashedSignature = crypto
      .createHash("sha512")
      .update(order_id + status_code + gross_amount + serverKey)
