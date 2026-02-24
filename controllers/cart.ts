@@ -197,16 +197,6 @@ export const updateCartController = async (req: AuthRequest, res: Response) => {
                 msg: "Quantity tidak boleh kosong",
             })
         }
-        const productNotFound = await prisma.product.findUnique({
-            where: {
-                id: (productId),
-            }
-        })
-        if (!productNotFound){
-            return res.status(404).json({
-                msg: "Produk tidak ditemukan",
-            })
-        }
         const existingCart = await prisma.cart.findUnique({
             where: {
                 userId: req.user!.id,
