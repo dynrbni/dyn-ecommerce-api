@@ -15,7 +15,7 @@ export const JwtVerify = (
     if (!token) {
         return res.status(401).json({   
             status: false,
-            message: "Unauthorized - token missing",
+            msg: "Unauthorized - token missing",
         });
     }
 
@@ -23,7 +23,7 @@ export const JwtVerify = (
         if (err) {
             return res.status(401).json({
                 status: false,
-                message: "Unauthorized - invalid token",
+                msg: "Unauthorized - invalid token",
             });
         }
         req.user = { 

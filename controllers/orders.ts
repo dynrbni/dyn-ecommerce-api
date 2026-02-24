@@ -320,9 +320,9 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
             }
         })
     } catch (error: any) {
-       if (error.message === "Stok produk tidak cukup"){
+       if (error.msg === "Stok produk tidak cukup"){
             return res.status(400).json({
-                msg: error.message,
+                msg: error.msg,
              })
        }
        console.log(error);

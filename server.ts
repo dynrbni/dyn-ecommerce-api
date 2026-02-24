@@ -14,7 +14,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PATCH", "DELETE"],
+}));
 app.use(express.json());
 app.use(limiter); 
 
@@ -25,6 +28,13 @@ app.use("/api", productRoutes);
 app.use("/api", cartRoutes);
 app.use("/api", orderRoutes);
 app.use("/api/midtrans/webhook", midtransWebhookController);
+
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: true,
+    msg: 'API sehat wal afiat, Alhamdulillah',
+  });
+});
 
 app.get('/', (req, res) => {
   res.send('E-Commerce API by King Dean');
