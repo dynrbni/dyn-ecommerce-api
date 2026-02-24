@@ -12,7 +12,12 @@ export const getAllUsersController = async (req: Request, res: Response) => {
         });
         res.status(200).json({
             msg: "Berhasil mendapatkan semua users",
-            data: user,
+            data: user.map(u => ({
+                id: u.id,
+                name: u.name,
+                email: u.email,
+                role: u.role,
+            }))
         })
     } catch (error) {
         console.log(error);
@@ -37,7 +42,12 @@ export const getUserByIdController = async (req: Request, res: Response) =>{
         }
         res.status(200).json({
             msg: "Berhasil mendapatkan data user",
-            data: user,
+            data: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            },
         })
     } catch (error) {
         console.log(error);
@@ -76,7 +86,11 @@ export const createUserController = async (req: Request, res: Response) => {
          const token = generateToken({id: newUser.id, role: newUser.role});
          res.status(201).json({
             msg: "Berhasil membuat user baru",
-            data: newUser,
+            data: {
+                id: newUser.id,
+                name: newUser.name,
+                email: newUser.email,
+            },
             token: token,
          })
     } catch (error) {
