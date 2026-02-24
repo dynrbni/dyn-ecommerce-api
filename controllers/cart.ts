@@ -1,4 +1,3 @@
-import { parse } from './../node_modules/zod/src/v4/classic/parse';
 import prisma from "../database/prismaClient";
 import { Response } from "express";
 import { AuthRequest } from "../types/express";
@@ -92,14 +91,24 @@ export const getItemCartByIdController = async (req: AuthRequest, res: Response)
 export const addToCartController = async (req: AuthRequest, res: Response) => {
     try {
         const { productId, quantity } = req.body;
-        const productDeleted = await prisma.product.findUnique({
+        const productNotFound = await prisma.product.findUnique({
             where: {
                 id: String(productId),
             }
         })
-        if (!productDeleted || productDeleted.deletedAt !== null){
+        if (!productNotFound || productNotFound.deletedAt !== null){
             return res.status(404).json({
                 msg: "Produk tidak ditemukan",
+            })
+        }
+        const productDeleted = await prisma.product.findFirst({
+            where: {
+                deletedAt: null,
+            }
+        })
+        if (!productDeleted || productDeleted.deletedAt !== null){
+            return res.status(404).json({
+                msg: "Produk telah dihapus",
             })
         }
         if (!productId || !quantity) {
@@ -112,16 +121,7 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
                 msg: "Quantity harus lebih besar dari 0",
             })
         }
-        const productNotFound = await prisma.product.findUnique({
-            where: {
-                id: String(productId),
-            }
-        })
-        if (!productNotFound || productNotFound.deletedAt !== null){
-            return res.status(404).json({
-                msg: "Produk tidak ditemukan",
-            })
-        }
+
         //cek user udh punya cart tw blm
         let existingCart = await prisma.cart.findUnique({
             where: {
