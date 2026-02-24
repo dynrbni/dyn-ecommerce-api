@@ -15,6 +15,11 @@ export const midtransWebhookController = async (req: Request, res: Response) => 
       return res.status(404).json({ msg: "Payment record not found" });
     }
 
+    if (payment.transactionStatus === transaction_status) {
+      console.log(`Payment untuk orderId ${order_id} sudah sukses, tidak perlu update.`);
+      return res.status(200).json({ msg: "Webhook received successfully" });
+    }
+
     if (
       transaction_status === "capture" ||
       transaction_status === "settlement"
@@ -55,9 +60,7 @@ export const midtransWebhookController = async (req: Request, res: Response) => 
           },
         }),
       ]);
-    }
-
-    else if (transaction_status === "expire") {
+    } else if (transaction_status === "expire") {
       await prisma.$transaction([
         prisma.order.update({
           where: { id: order_id },
@@ -73,16 +76,46 @@ export const midtransWebhookController = async (req: Request, res: Response) => 
           },
         }),
       ]);
-    }
-
-    else if (transaction_status === "pending") {
+    } else if (transaction_status === "pending") {
       await prisma.payment.update({
         where: { orderId: order_id },
         data: {
           transactionStatus: "PENDING",
         },
       });
-    }
+    } else if (transaction_status === "refund") {
+      await prisma.$transaction([
+        prisma.order.update({
+          where: { id: order_id },
+          data: {
+            paymentStatus: "REFUND",
+            shippingStatus: "CANCELLED",
+          },
+        }),
+        prisma.payment.update({
+          where: { orderId: order_id },
+          data: {
+            transactionStatus: "REFUND",
+          },
+        }),
+      ]);
+    } else if (transaction_status === "deny") {
+      await prisma.$transaction([
+        prisma.order.update({
+          where: { id: order_id },
+          data: {
+            paymentStatus: "FAILED",
+            shippingStatus: "CANCELLED",
+          },
+        }),
+        prisma.payment.update({
+          where: { orderId: order_id },
+          data: {
+            transactionStatus: "DENY",
+          },
+        }),
+      ]);
+    }    
 
     return res.status(200).json({ msg: "Webhook received successfully" });
   } catch (error) {
