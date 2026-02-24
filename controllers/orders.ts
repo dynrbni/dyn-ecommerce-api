@@ -25,7 +25,7 @@ export const getAllUsersOrdersController = async (req: AuthRequest, res: Respons
                 orders: orders.map(order => ({
                     orderId: order.id,
                     totalPrice: order.totalPrice,
-                    PaymentStatus: order.paymentStatus,
+                    paymentStatus: order.paymentStatus,
                     shippingStatus: order.shippingStatus,
                     items: order.items.map(item => ({
                         userId: order.userId,
@@ -315,9 +315,9 @@ export const checkoutNowController = async (req: AuthRequest, res: Response) => 
             }
         })
     } catch (error: any) {
-       if (error.msg === "Stok produk tidak cukup"){
+       if (error.message === "Stok produk tidak cukup"){
             return res.status(400).json({
-                msg: error.msg,
+                msg: error.message,
              })
        }
        console.log(error);

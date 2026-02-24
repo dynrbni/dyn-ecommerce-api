@@ -173,8 +173,12 @@ export const updateUserController = async (req: Request, res: Response) => {
         })
         res.status(200).json({
             msg: "Berhasil mengupdate user",
-            data: updatedUser,
-        })
+            data: {
+                id: updatedUser.id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+            },
+         })
     } catch (error) {
         console.log(error);
         res.status(500).json({
@@ -206,7 +210,11 @@ export const deleteUserController = async (req: Request, res: Response) => {
         })
         res.status(200).json({
             msg: "Berhasil menghapus user",
-            data: deletedUser,
+            data: {
+                id: deletedUser.id,
+                name: deletedUser.name,
+                email: deletedUser.email,
+            },
         })
     } catch (error) {
         console.log(error);

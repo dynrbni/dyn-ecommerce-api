@@ -101,16 +101,6 @@ export const addToCartController = async (req: AuthRequest, res: Response) => {
                 msg: "Produk tidak ditemukan",
             })
         }
-        const productDeleted = await prisma.product.findFirst({
-            where: {
-                deletedAt: null,
-            }
-        })
-        if (!productDeleted || productDeleted.deletedAt !== null){
-            return res.status(404).json({
-                msg: "Produk telah dihapus",
-            })
-        }
         if (!productId || !quantity) {
             return res.status(400).json({
                 msg: "Product ID dan Quantity harus diisi",
