@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import type { Response, NextFunction } from "express";
 import { AuthRequest } from "../types/express";
 import jwt from "jsonwebtoken";
 
@@ -27,7 +27,8 @@ export const JwtVerify = (
             });
         }
         req.user = { 
-            id: decoded.id 
+            id: decoded.id,
+            role: decoded.role,
         };
         next();
     });
