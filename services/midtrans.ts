@@ -19,7 +19,11 @@ export const createTransaction = async (orderId: string, totalPrice: number, pro
         transaction_details: {
             order_id: orderId,
             gross_amount: totalPrice,
-        }
+        },
+        expiry: {
+            unit: "minute",
+            duration: 1,
+          },
     }
     return snap.createTransaction(parameter);
 }
